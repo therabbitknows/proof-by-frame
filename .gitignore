@@ -1,0 +1,98 @@
+# =============================================================================
+# proof-by-frame — gitignore
+# Hybrid Python (FastAPI) + React Native (TypeScript) + Cloudflare Workers (JS).
+# Strict: anything that could carry a secret or operator-private info is OUT.
+# =============================================================================
+
+# ---- Secrets / env ----
+.env
+.env.*
+!.env.example
+!.env.template
+*.pem
+*.key
+*.keystore
+*-keypair.json
+*-authority.json
+
+# ---- Operator memory / transcripts (must NEVER enter the repo) ----
+.claude/
+MEMORY.md
+memory/
+*.jsonl
+**/*-private-notes/
+**/_archive/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+htmlcov/
+.coverage
+.coverage.*
+
+# ---- Node / RN ----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp.*
+.yarn/install-state.gz
+package-lock.json.bak
+
+# ---- React Native + Metro ----
+.expo/
+.expo-shared/
+metro-cache/
+*.tsbuildinfo
+
+# ---- Android build ----
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/captures/
+android/.idea/
+android/.cxx/
+android/app/release/
+android/app/debug/
+android/keystores/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# ---- iOS build ----
+ios/build/
+ios/Pods/
+ios/*.xcworkspace
+ios/Podfile.lock
+DerivedData/
+
+# ---- Cloudflare Workers ----
+.wrangler/
+.dev.vars
+
+# ---- Editor / OS ----
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ---- Misc backups ----
+*.backup
+*.bak
+*.orig
+*-pre-rotation-backup-*

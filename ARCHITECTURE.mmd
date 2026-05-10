@@ -1,0 +1,56 @@
+%% PROOF by Frame — Submission-scoped architecture diagram
+%% Shows the Solana surface and integration boundaries judges need to verify.
+%% AI assessment + condition pipeline + bot infrastructure intentionally
+%% collapsed into a single private-IP block.
+%%
+%% Render: mmdc -i ARCHITECTURE.mmd -o ARCHITECTURE.png -t dark -b transparent
+
+graph TB
+    classDef mobile fill:#1f2937,stroke:#E8C44A,color:#E0E0E0
+    classDef cloud fill:#0E0E0E,stroke:#38bdf8,color:#E0E0E0
+    classDef cf fill:#0E0E0E,stroke:#f59e0b,color:#E0E0E0
+    classDef chain fill:#0E0E0E,stroke:#E8C44A,color:#E8C44A
+    classDef private fill:#141414,stroke:#888,color:#B0B0B0,stroke-dasharray: 5 5
+
+    %% Mobile clients
+    APP[📱 Mobile<br/>Saga + Seeker<br/>RN + MWA]:::mobile
+
+    %% Cloud backend
+    subgraph CLOUD["☁️ Backend"]
+        RY[FastAPI on Railway<br/>Solana Actions endpoints<br/>SIWS auth]
+    end
+
+    %% Cloudflare edge
+    subgraph CF["🌐 Cloudflare Workers"]
+        CFAPP[Reveal page + Blink reverse-proxy]
+        CFMINT[Bubblegum mintToCollectionV1<br/>atomic mint + verify]
+    end
+
+    %% Private — collapsed AI / condition / community pipeline
+    AIBOX[🔒 Private<br/>AI inference layer<br/>condition assessment<br/>community vote runtime]:::private
+
+    %% Solana on-chain primitives — what judges verify
+    subgraph SOLANA["⛓ Solana Devnet"]
+        BG[Bubblegum<br/>compressed NFTs]
+        TM[Token Metadata<br/>collection NFT]
+        ACT[Solana Actions<br/>list / bid / settle / vote]
+        USDC[SPL Token<br/>USDC transferChecked]
+        SIWS[SIWS<br/>Sign-In With Solana]
+        WID[World ID<br/>Worldcoin]
+    end
+
+    %% Flows — public-relevant only
+    APP -->|MWA: authorize + signMessages + signAndSendTransactions| RY
+    APP -->|share / reveal| CFAPP
+    RY -->|seal mint via /mint-cnft| CFMINT
+    RY -.->|opaque RPC / pipeline| AIBOX
+    CFMINT -->|atomic verify| BG
+    CFMINT --> TM
+    RY --> ACT
+    RY --> USDC
+    RY --> SIWS
+    RY --> WID
+
+    class RY cloud
+    class CFAPP,CFMINT cf
+    class BG,TM,ACT,USDC,SIWS,WID chain

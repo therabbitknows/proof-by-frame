@@ -1,0 +1,8 @@
+name = "proofbyframe-cnft-mint"
+main = "worker.js"
+compatibility_date = "2026-04-23"
+compatibility_flags = ["nodejs_compat"]
+[vars]
+COLLECTION_MINT = "7jS864WTvSMce75Y5YUhkbE4K9an9jdCWVWAJVMoaUr5"
+MERKLE_TREE = "7z59tiH4vo5Uw1sV1b6MTR47VPraDxMtkzuB1PZ2xqfv"
+CLUSTER = "devnet"

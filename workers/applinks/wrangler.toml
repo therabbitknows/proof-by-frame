@@ -1,0 +1,13 @@
+name = "proofbyframe-applinks"
+main = "worker.js"
+compatibility_date = "2026-04-23"
+routes = [
+  { pattern = "proofbyframe.com/.well-known/assetlinks.json", zone_name = "proofbyframe.com" },
+  { pattern = "proofbyframe.com/phantom-auth-callback",        zone_name = "proofbyframe.com" },
+  { pattern = "proofbyframe.com/phantom-auth-callback/*",      zone_name = "proofbyframe.com" },
+  { pattern = "proofbyframe.com/worldid/callback",             zone_name = "proofbyframe.com" },
+  { pattern = "proofbyframe.com/worldid/callback/*",           zone_name = "proofbyframe.com" },
+  { pattern = "proofbyframe.com/blinkitem/*",                  zone_name = "proofbyframe.com" },
+  { pattern = "proofbyframe.com/actions.json",                 zone_name = "proofbyframe.com" },
+  { pattern = "proofbyframe.com/reveal/*",                     zone_name = "proofbyframe.com" },
+]
