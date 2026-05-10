@@ -57,8 +57,9 @@ Response (failure modes):
 ## Verifying behavior end-to-end (no source access required)
 
 ```bash
-# 1. Health check
-curl https://proofbyframe-cnft-mint.therabbit1444.workers.dev/health
+# 1. Health check (deployed at a private *.workers.dev subdomain;
+#    backend reaches it via internal binding, not exposed publicly)
+curl https://<your-deploy>.workers.dev/health
 # → has_authority: true
 
 # 2. Submit a card via the mobile app, wait for seal
