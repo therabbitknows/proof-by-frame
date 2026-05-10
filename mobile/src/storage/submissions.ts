@@ -2,11 +2,7 @@
  * Local persistence for PROOF submissions.
  * Uses AsyncStorage with JSON serialization.
  *
- * Originally ported from the alpha reference
- * (proof-dapp-hackathon @ origin/reference/alpha-sanitized-clean,
- *  src/storage/submissions.ts, commit 378f49c).
- *
- * Identity model (docs/IDENTITY_MODEL.md, locked 2026-04-16):
+ * Identity model:
  *   Mobile identity = Phantom wallet pubkey.
  *   Storage buckets are keyed per wallet:
  *     PROOF_SUBMISSIONS:<walletPubkey>   — authenticated user

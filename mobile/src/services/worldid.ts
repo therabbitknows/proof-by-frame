@@ -12,8 +12,8 @@
  *
  * No client_secret: Worldcoin's Sign-In endpoint treats PKCE public clients
  * as confidential-equivalent. Server-side proof verification is the job of
- * frame-brain (Track 3); the id_token's `sub` is enough to gate client-side
- * features (vote once, redeem monthly credits once).
+ * the backend; the id_token's `sub` is enough to gate client-side features
+ * (vote once, redeem monthly credits once).
  */
 import * as WebBrowser from 'expo-web-browser';
 

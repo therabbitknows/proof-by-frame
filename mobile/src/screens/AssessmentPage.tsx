@@ -28,18 +28,18 @@ import {View, Text, ScrollView, StyleSheet} from 'react-native';
 import {T} from '../constants/tokens';
 
 // ──────────────────────────────────────────────────────────────
-// Types — mirrors of frame-brain ocr_result.extracted_fields
+// Types — JSON shape returned by the backend's OCR endpoint
 // ──────────────────────────────────────────────────────────────
 
 export interface OcrIdentity {
-  player_name?: string | null;     // identity Pass 1/3 — qwen3-vl + arbitration
+  player_name?: string | null;
   year?: string | number | null;
   manufacturer?: string | null;    // Topps / Panini / Bandai / Upper Deck …
   set_name?: string | null;        // e.g. "2023 Topps Chrome Update"
   card_number?: string | null;     // e.g. "USC-12" / "543"
   variation?: string | null;       // parallel / refractor / Young Guns / Alt Art
-  rarity_flag?: 'base' | 'SP' | 'SSP' | 'USP' | null;  // CardScout Hit Registration
-  printing_uuid?: string | null;   // reference.db match
+  rarity_flag?: 'base' | 'SP' | 'SSP' | 'USP' | null;
+  printing_uuid?: string | null;
   confidence?: number | null;      // 0.0 – 1.0
 }
 

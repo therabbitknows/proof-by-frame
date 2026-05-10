@@ -1,8 +1,7 @@
 /**
  * Discord OAuth + beta-access gate.
  *
- * Flow (matches the alpha implementation at
- * /Users/Shared/dev/proof-dapp-alpha/src/auth/{useAuth.ts,authService.ts,discordConfig.ts}):
+ * Flow:
  *
  *   1. signInWithDiscord() calls Linking.openURL(
  *        `${API}/auth/discord/start?app_redirect_uri=proofapp://auth/callback`

@@ -1,10 +1,9 @@
 // SlabFrame.tsx
 // The canonical "final proof = slab" visual treatment.
 //
-// Ported from proof-dapp-alpha/src/components/ui/SlabFrame.tsx — the
-// historical pattern was to wrap the entire StatusScreen / Result flow
-// in a SlabFrame so every submission view reads as if it's already
-// presented inside a graded card slab. Gold 2px rim + inner background
+// Wraps the entire StatusScreen / Result flow in a frame so every
+// submission view reads as if it's already presented inside a graded
+// card slab. Gold 2px rim + inner background
 // matching the app bg; rounded 30/28 corners evoke the rounded plastic
 // of a PSA/BGS/CGC holder.
 //

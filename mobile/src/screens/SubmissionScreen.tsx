@@ -330,7 +330,7 @@ export const SubmissionScreen: React.FC = () => {
       });
 
       // Step 5: Submit for community voting.
-      // Backend (frame-brain) no longer gates this transition on identity
+      // The backend no longer gates this transition on identity
       // completeness — partial OCR is acceptable; OCR async-updates the
       // submission record and the Discord thread reflects updates as they
       // land. If response includes `identity_warning`, log it for

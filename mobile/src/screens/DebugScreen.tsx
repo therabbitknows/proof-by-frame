@@ -126,16 +126,15 @@ export const DebugScreen: React.FC = () => {
       if (res.success) {
         pushLog('verify-wallet', true, 'verified');
       } else {
-        // Track 3 Phase 1 endpoints (/api/auth/wallet-nonce, wallet-verify)
-        // are merged to frame-brain (9886b04) but not deployed — a 404 here
-        // means the backend push is still pending, not a client bug.
+        // A 404 on /api/auth/wallet-nonce or /api/auth/wallet-verify
+        // means the backend hasn't been (re)deployed, not a client bug.
         const err = res.error || 'failed';
         const isNotDeployed = /404|not found|wallet-nonce|wallet-verify/i.test(err);
         pushLog(
           'verify-wallet',
           false,
           isNotDeployed
-            ? `backend not deployed yet: ${err}. frame-brain branch 9886b04 needs Railway push.`
+            ? `backend endpoint unavailable: ${err}`
             : err,
         );
       }

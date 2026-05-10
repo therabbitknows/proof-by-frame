@@ -13,7 +13,7 @@ const frameBrainApiUrl = normalizedFrameBrainUrl.endsWith('/api')
   : `${normalizedFrameBrainUrl}/api`;
 
 const CONFIG = {
-  // Railway frame-brain API — always served under /api. The env value may or
+  // Railway backend API — always served under /api. The env value may or
   // may not include the suffix, so we normalize once here to avoid 404s.
   API_BASE_URL: frameBrainApiUrl,
 

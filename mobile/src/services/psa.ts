@@ -1,9 +1,9 @@
 /**
- * PSA baseline verification client — thin wrapper over frame-brain's
+ * PSA baseline verification client — thin wrapper over the backend's
  * /api/psa/verify-cert proxy endpoint. Token stays server-side, we never
  * call api.psacard.com from the APK.
  *
- * Status enum mirrors what frame-brain's psa_client returns:
+ * Status enum mirrors what the backend's PSA client returns:
  *   psa_verified_match         — cert exists + grade matches user's tier
  *   psa_verified_mismatch      — cert exists but grade differs (UI prompts override)
  *   psa_lookup_no_data         — cert format ok, PSA has no record

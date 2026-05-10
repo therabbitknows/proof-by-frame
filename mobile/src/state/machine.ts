@@ -1,10 +1,6 @@
 /**
  * Submission state machine helpers.
- * Mirrors the FRAME workflow so the app and bot remain aligned.
- *
- * Ported verbatim from the alpha reference
- * (proof-dapp-hackathon @ origin/reference/alpha-sanitized-clean,
- *  src/state/machine.ts, commit 378f49c).
+ * Mirrors the backend workflow so the app and bot remain aligned.
  *
  * Pure logic module: no runtime side effects, no storage, no
  * navigation, no auth. Only dependency is the `SubmissionState`

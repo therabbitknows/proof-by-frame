@@ -1,14 +1,9 @@
 /**
  * PROOF Submission data models.
  *
- * Ported from the alpha reference
- * (proof-dapp-hackathon @ origin/reference/alpha-sanitized-clean,
- *  src/types/submission.ts).
- *
- * Type-only: runtime factories from the alpha file
- * (createEmptyNotes, generateSubmissionId, createEmptySubmission)
- * are intentionally excluded. They belong with state / storage
- * and will be introduced alongside those transplants.
+ * Type-only module. Runtime factories (createEmptyNotes,
+ * generateSubmissionId, createEmptySubmission) are intentionally
+ * excluded — they live with state / storage.
  */
 
 export type SubmissionState =

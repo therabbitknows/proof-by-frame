@@ -1153,7 +1153,7 @@ const PostSealActions: React.FC<PostSealProps> = ({status, onStateChanged}) => {
     }
     setBusy(true);
     try {
-      // CONFIG.API_BASE_URL is the canonical `${frame-brain}/api` form;
+      // CONFIG.API_BASE_URL is the canonical `${backend}/api` form;
       // the action endpoint is at /api/actions/marketplace/list/{id},
       // so we append /actions/... to reach it.
       const postUrl =
