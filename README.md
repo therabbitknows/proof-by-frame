@@ -80,8 +80,8 @@ proof-by-frame/
 ├── workers/
 │   ├── applinks/         CF Worker — /reveal/<id> + /blinkitem reverse-proxy (contract-only)
 │   └── cnft-mint/        CF Worker — Bubblegum atomic mint+verify (contract-only)
-├── ARCHITECTURE.md       System design + Mermaid diagram
-├── ARCHITECTURE.png/.mmd Diagram + source
+├── ARCHITECTURE.md       System design + inline Mermaid diagram
+├── ARCHITECTURE.png      Pre-rendered diagram (also embedded in .md)
 ├── LICENSE               MIT
 └── .gitignore
 ```
