@@ -12,7 +12,7 @@ Community-graded trading cards on Solana. Submit a card → community votes → 
 
 The slab — that hard plastic case with a number on it — is the trust signal collectors actually pay for. Today, only PSA / BGS / CGC / TAG can produce one, weeks of turnaround and gatekept fees per card. PROOF inverts the pipeline: the *consensus* arrives **before** the slab, mediated by a community of collectors who vote on what they see, on-chain. The result is a sealed compressed-NFT that travels with the card — provenance, condition signals, and consensus, captured at the moment the community agrees.
 
-A user captures front + back of a card on a Solana Mobile device (Saga / Seeker), the backend extracts identity + condition signals, and the submission goes to a Discord-thread vote. Once the community ratifies, the proof is **sealed** — minted as a Bubblegum compressed NFT atomically verified under the `PROOF Sealed Cards` collection. Buyers and sellers transact directly in USDC via Solana Actions / Blinks; PROOF takes zero of the sale.
+A user captures front + back of a card on any Android with a Solana wallet (Saga and Seeker are our reference devices but not required), the backend extracts identity + condition signals, and the submission goes to a Discord-thread vote. Once the community ratifies, the proof is **sealed** — minted as a Bubblegum compressed NFT atomically verified under the `PROOF Sealed Cards` collection. Buyers and sellers transact directly in USDC via Solana Actions / Blinks; PROOF takes zero of the sale.
 
 ---
 
