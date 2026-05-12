@@ -92,8 +92,16 @@ proof-by-frame/
 
 A representative open-source slice for [Solana Frontier 8(e)](https://colosseum.com/frontier) review:
 
-- **Open**: MWA-aware mobile UI source, Solana Actions URL/memo specs (`backend/app/marketplace_actions.py`), state machine (`backend/app/constants.py`), Helius RPC helper (`backend/app/helius.py`), Bubblegum cNFT transfer pattern (`backend/app/cnft_transfer.py`), architecture decisions, and public on-chain anchors. Anyone can verify the live system end-to-end via the APK + the on-chain anchors above.
-- **Contract-only stubs**: the Bubblegum mint Worker, the social-share reveal Worker, the on-chain bootstrap scripts, the wallet-service multi-variant signer, and the Hermes/RN polyfill cluster — bodies replaced with documented public contracts. Each stubbed component's behavior is verifiable via the live deployment.
+- **Open — Solana hot paths (judges can read the implementation)**:
+  - `workers/cnft-mint/worker.js` — full Bubblegum `mintToCollectionV1` worker. Atomic mint + verify under the `PROOF Sealed Cards` collection so DAS returns populated `grouping[]`.
+  - `mobile/src/services/wallet.ts` — full MWA wallet service. Connect / SIWS `signMessageRaw` / multi-variant `signAndSendTransactions` handling Phantom 26.6.0 quirks.
+  - `backend/app/marketplace_actions.py` — Solana Actions URL/memo spec (`x-action-version 2.4`, `x-blockchain-ids: solana:devnet`), USDC unit math, listing memo builder.
+  - `backend/app/helius.py` — Helius DAS + RPC wrapper (getAsset, getAssetsByOwner, transaction parsing).
+  - `backend/app/cnft_transfer.py` — Bubblegum transfer-instruction builder.
+  - `backend/app/constants.py` — submission state machine.
+  - `mobile/src/services/solanaPay.ts` — Solana Pay Transaction Request URL builder.
+  - Full mobile UI source (screens, hooks, services).
+- **Contract-only stubs**: the social-share reveal Worker (`workers/applinks/worker.js`) and the on-chain bootstrap scripts (`backend/scripts/admin/*.mjs`) — bodies documented but redacted. Each stubbed component's behavior is verifiable via the live deployment + on-chain anchors above.
 - **Held privately**: FastAPI route handlers + DB schema, Discord bot runtime, AI assessment + condition pipeline, premium-tier research pipeline, deployment runbook, infrastructure topology, secret-storage configuration, and operator-private docs.
 
 This is a deliberate split between *the Solana surface judges verify* (visible: on-chain primitives, Action specs, mobile MWA flows) and *the proprietary product layer* (verifiable end-to-end against the live deployment, but not handed over). A reasonable Solana developer could rebuild any single primitive from public Metaplex / Solana Actions / Phantom docs in 1-3 days. The moat is the integration, the community, and the operational layer — none of which a public source disclosure would compromise.
