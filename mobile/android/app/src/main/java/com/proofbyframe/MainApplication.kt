@@ -21,8 +21,7 @@ class MainApplication : Application(), ReactApplication {
       ReactNativeHostWrapper(this, object : DefaultReactNativeHost(this) {
         override fun getPackages(): List<ReactPackage> =
             PackageList(this).packages.apply {
-              // Packages that cannot be autolinked yet can be added manually here, for example:
-              // add(MyReactNativePackage())
+              add(WorldIDPackage())
             }
 
         override fun getJSMainModuleName(): String = "index"

@@ -31,6 +31,16 @@ Optional version overrides are `PROOF_ANDROID_VERSION_CODE` and
 remain outside the repository. Every Solana dApp Store update must use the
 same release key and a monotonically increasing version code.
 
+## World ID package access
+
+The official Android SDK is published through World's GitHub Packages
+repository. Local and CI builds need `GITHUB_ACTOR` plus a `GITHUB_TOKEN`
+with read-only `read:packages` scope. These values are build credentials and
+must not be added to `.env`, Gradle files, or the APK.
+
+IDKit 4.0.5 requires Android 8.0 / API 26 or newer. The canonical Android build
+therefore uses `minSdkVersion = 26`; do not force the library onto API 24-25.
+
 ## Source and artifact rules
 
 - Do not commit `.env`, `local.properties`, keystores, APKs, AABs, Gradle

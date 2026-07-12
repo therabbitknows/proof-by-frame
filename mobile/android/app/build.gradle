@@ -99,8 +99,8 @@ android {
         applicationId "com.proofbyframe"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode Integer.parseInt(System.getenv("PROOF_ANDROID_VERSION_CODE") ?: "2")
-        versionName System.getenv("PROOF_ANDROID_VERSION_NAME") ?: "1.1.0"
+        versionCode Integer.parseInt(System.getenv("PROOF_ANDROID_VERSION_CODE") ?: "3")
+        versionName System.getenv("PROOF_ANDROID_VERSION_NAME") ?: "1.2.0"
     }
     signingConfigs {
         if (hasReleaseSigning) {
@@ -143,6 +143,7 @@ tasks.matching { task -> task.name == "preReleaseBuild" }.configureEach {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    implementation("com.worldcoin:idkit:4.0.5")
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")

@@ -16,7 +16,13 @@ import React, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CONFIG from '../constants/config';
 import {ApiService} from '../services/api';
-import {verifyWithWorldID, type WorldIDVerification} from '../services/worldid';
+import {
+  hasWorldIDV4Context,
+  verifyWithWorldID,
+  verifyWithWorldIDV4,
+  type WorldIDRequestContext,
+  type WorldIDVerification,
+} from '../services/worldid';
 import {useSession} from './useSession';
 
 const STORAGE_KEY = 'PROOF_WORLD_ID_VERIFICATION';
@@ -83,8 +89,29 @@ export const WorldIDAuthProvider: React.FC<{children: React.ReactNode}> = ({
     setIsVerifying(true);
     setError(null);
     try {
+      if (!walletPubkey) {
+        throw new Error('Connect a wallet before verifying with World ID');
+      }
+      const requestResponse = await ApiService.getWorldIDRequestContext();
+      const requestContext = requestResponse.data as WorldIDRequestContext;
+
+      if (hasWorldIDV4Context(requestContext)) {
+        const flow = await verifyWithWorldIDV4({
+          requestContext,
+          walletPubkey,
+          returnTo: CONFIG.WORLD_ID_RETURN_URL,
+        });
+        await ApiService.verifyWorldIDV4(
+          walletPubkey,
+          flow.idkitResponse,
+        );
+        await persist(flow.verification);
+        setVerification(flow.verification);
+        return {success: true};
+      }
+
       const result = await verifyWithWorldID({
-        appId: CONFIG.WORLD_ID_APP_ID,
+        appId: requestContext.app_id || CONFIG.WORLD_ID_APP_ID,
         redirectUri: CONFIG.WORLD_ID_REDIRECT_URL,
       });
 
@@ -102,9 +129,7 @@ export const WorldIDAuthProvider: React.FC<{children: React.ReactNode}> = ({
         verificationLevel: result.verificationLevel,
         nullifierTail: result.nullifierHash?.slice(-10),
       });
-      if (!walletPubkey) {
-        console.log('[PROOF][worldid] no walletPubkey — skipping backend verify');
-      } else if (!result.idToken || result.idToken.length < 10) {
+      if (!result.idToken || result.idToken.length < 10) {
         console.log('[PROOF][worldid] result.idToken missing/short — skipping backend verify, local-only');
         setError('Backend verify skipped: id_token missing from Worldcoin response');
       } else {
@@ -152,7 +177,7 @@ export const WorldIDAuthProvider: React.FC<{children: React.ReactNode}> = ({
     isVerifying,
     isLoading,
     error,
-    isConfigured: Boolean(CONFIG.WORLD_ID_APP_ID),
+    isConfigured: Boolean(CONFIG.API_BASE_URL),
     verify,
     clearVerification,
   };

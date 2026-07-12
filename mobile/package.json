@@ -18,7 +18,6 @@
     "@solana-mobile/mobile-wallet-adapter-protocol-web3js": "^2.2.7",
     "@solana/pay": "0.2.6",
     "@solana/web3.js": "^1.98.4",
-    "@worldcoin/idkit-standalone": "^2.2.5",
     "axios": "^1.15.0",
     "expo": "~53.0.0",
     "expo-auth-session": "~6.2.1",

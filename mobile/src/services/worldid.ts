@@ -16,6 +16,7 @@
  * (vote once, redeem monthly credits once).
  */
 import * as WebBrowser from 'expo-web-browser';
+import {NativeModules} from 'react-native';
 
 const AUTHORIZE_URL = 'https://id.worldcoin.org/authorize';
 const TOKEN_URL = 'https://id.worldcoin.org/token';
@@ -41,11 +42,92 @@ export interface WorldIDClaims {
 
 export interface WorldIDVerification {
   nullifierHash: string;
-  verificationLevel: 'orb' | 'device' | null;
+  verificationLevel: 'world_id_v4' | 'orb' | 'device' | null;
   idToken: string;
   accessToken: string;
   issuedAt: number;
   expiresAt: number | null;
+}
+
+export interface WorldIDRequestContext {
+  app_id: `app_${string}`;
+  action: string;
+  environment?: 'staging' | 'production';
+  rp_context?: {
+    rp_id: string;
+    nonce: string;
+    created_at: number;
+    expires_at: number;
+    signature: string;
+  };
+}
+
+export interface WorldIDV4FlowResult {
+  verification: WorldIDVerification;
+  idkitResponse: Record<string, unknown>;
+}
+
+export function hasWorldIDV4Context(
+  value: WorldIDRequestContext,
+): value is WorldIDRequestContext & {
+  environment: 'staging' | 'production';
+  rp_context: NonNullable<WorldIDRequestContext['rp_context']>;
+} {
+  const rp = value?.rp_context;
+  return Boolean(
+    value?.app_id?.startsWith('app_') &&
+      value?.action &&
+      (value?.environment === 'staging' || value?.environment === 'production') &&
+      rp?.rp_id &&
+      rp?.nonce &&
+      Number.isFinite(rp?.created_at) &&
+      Number.isFinite(rp?.expires_at) &&
+      rp?.signature,
+  );
+}
+
+export function verificationFromIDKitResult(
+  result: Record<string, any>,
+): WorldIDVerification {
+  const responses = Array.isArray(result.responses) ? result.responses : [];
+  const nullifier = responses.find(
+    response => response && typeof response.nullifier === 'string',
+  )?.nullifier;
+  if (!nullifier) {
+    throw new Error('World ID result did not contain a uniqueness nullifier');
+  }
+  return {
+    nullifierHash: nullifier,
+    verificationLevel: 'world_id_v4',
+    idToken: '',
+    accessToken: '',
+    issuedAt: Date.now(),
+    expiresAt: null,
+  };
+}
+
+export async function verifyWithWorldIDV4(params: {
+  requestContext: WorldIDRequestContext & {
+    environment: 'staging' | 'production';
+    rp_context: NonNullable<WorldIDRequestContext['rp_context']>;
+  };
+  walletPubkey: string;
+  returnTo: string;
+}): Promise<WorldIDV4FlowResult> {
+  const nativeWorldID = NativeModules.ProofWorldID;
+  if (!nativeWorldID?.verify) {
+    throw new Error('World ID native module is unavailable in this build');
+  }
+  const rawResult = await nativeWorldID.verify({
+    ...params.requestContext,
+    wallet_signal: params.walletPubkey,
+    return_to: params.returnTo,
+  });
+  const idkitResponse = JSON.parse(rawResult) as Record<string, unknown>;
+  return {
+    verification: verificationFromIDKitResult(idkitResponse),
+    idkitResponse,
+  };
 }
 
 function randomBytes(n: number): Uint8Array {

@@ -79,6 +79,14 @@
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="proofapp" android:host="auth" android:pathPrefix="/callback" />
         </intent-filter>
+        <!-- World ID 4.x return callback. The proof itself is collected by
+             IDKit polling and forwarded directly to FRAME Brain. -->
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="proofapp" android:host="worldid" android:pathPrefix="/callback" />
+        </intent-filter>
         <!-- Sign in with World ID (OIDC) callback — Android App Link under
              the same proofbyframe.com domain that Phantom uses. Worldcoin's
              developer portal applies the same http/https-only redirect URL

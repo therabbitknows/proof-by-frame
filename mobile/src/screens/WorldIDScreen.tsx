@@ -121,8 +121,7 @@ const UnverifiedState: React.FC<{
       <View style={styles.warningBlock}>
         <Text style={styles.warningLabel}>NOT CONFIGURED</Text>
         <Text style={styles.warningText}>
-          WORLD_ID_APP_ID is not set in .env. Register an app at
-          developer.worldcoin.org and rebuild to enable verification.
+          World ID is not available from the configured FRAME Brain backend.
         </Text>
       </View>
     ) : null}
@@ -145,8 +144,8 @@ const UnverifiedState: React.FC<{
       )}
     </TouchableOpacity>
     <Text style={styles.fineprint}>
-      A browser tab will open to id.worldcoin.org. Complete verification and
-      you&rsquo;ll be returned here automatically.
+      World App will open for verification. PROOF receives a cryptographic
+      proof result, not biometric data.
     </Text>
   </>
 );
@@ -154,7 +153,7 @@ const UnverifiedState: React.FC<{
 const VerifiedState: React.FC<{
   verification: {
     nullifierHash: string;
-    verificationLevel: 'orb' | 'device' | null;
+    verificationLevel: 'world_id_v4' | 'orb' | 'device' | null;
     issuedAt: number;
   };
   onSignOut: () => void;
