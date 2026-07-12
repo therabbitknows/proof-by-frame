@@ -39,6 +39,7 @@ const CONFIG = {
   // is disabled with a user-facing message instead of a cryptic 400.
   WORLD_ID_APP_ID: Config.WORLD_ID_APP_ID || '',
   WORLD_ID_ACTION: 'proof-voter-verification',
+  WORLD_ID_RETURN_URL: 'proofapp://worldid/callback',
   // Worldcoin developer portal enforces http/https-only redirect URL.
   // Routes via proofbyframe.com App Link (same domain, single assetlinks.json).
   WORLD_ID_REDIRECT_URL: 'https://proofbyframe.com/worldid/callback',

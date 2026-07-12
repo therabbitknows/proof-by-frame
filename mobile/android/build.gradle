@@ -1,7 +1,8 @@
 buildscript {
     ext {
         buildToolsVersion = "36.0.0"
-        minSdkVersion = 24
+        // World ID IDKit 4.0.5 requires Android 8.0 (API 26) or newer.
+        minSdkVersion = 26
         compileSdkVersion = 36
         targetSdkVersion = 36
         ndkVersion = "27.1.12297006"
@@ -20,3 +21,16 @@ buildscript {
 
 apply plugin: "com.facebook.react.rootproject"
 apply plugin: "expo-root-project"
+
+allprojects {
+    repositories {
+        maven {
+            name = "WorldIDGitHubPackages"
+            url = uri("https://maven.pkg.github.com/worldcoin/idkit")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+}

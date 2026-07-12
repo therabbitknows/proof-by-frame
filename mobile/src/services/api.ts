@@ -280,6 +280,21 @@ export const ApiService = {
     });
   },
 
+  /** Fetch backend-owned World ID request configuration. In v4 this includes
+   * a short-lived RP signature; the signing key never enters the APK. */
+  getWorldIDRequestContext() {
+    return api.post('/world/rp-signature');
+  },
+
+  /** Forward the raw, short-lived IDKit result to FRAME Brain for official
+   * World verification and atomic nullifier persistence. */
+  verifyWorldIDV4(walletPubkey: string, idkitResponse: Record<string, unknown>) {
+    return api.post('/world/v4/verify', {
+      wallet_pubkey: walletPubkey,
+      idkit_response: idkitResponse,
+    });
+  },
+
   /** Check if wallet is approved for beta access. */
   checkBetaAccess(walletPubkey: string) {
     return api.get(`/admin/allowlist/wallet-status?wallet_pubkey=${encodeURIComponent(walletPubkey)}`);
