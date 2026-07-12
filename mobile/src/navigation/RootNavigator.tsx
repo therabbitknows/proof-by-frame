@@ -19,6 +19,7 @@ import {SealedResultScreen} from '../screens/SealedResultScreen';
 import {VaultScreen} from '../screens/VaultScreen';
 import {WalletScreen} from '../screens/WalletScreen';
 import {DebugScreen} from '../screens/DebugScreen';
+import {SafetyScreen} from '../screens/SafetyScreen';
 import {DEBUG_TOOLS_ENABLED} from '../utils/debugGuard';
 
 export type ConditionData = {
@@ -73,6 +74,7 @@ export type RootStackParamList = {
   SealedResult: {submissionId: string};
   Vault: undefined;
   Wallet: undefined;
+  Safety: {submissionId?: string; returnToSubmission?: boolean} | undefined;
   Debug: undefined;
 };
 
@@ -131,6 +133,7 @@ export const RootNavigator: React.FC = () => {
             <Stack.Screen name="SealedResult" component={SealedResultScreen} />
             <Stack.Screen name="Vault" component={VaultScreen} />
             <Stack.Screen name="Wallet" component={WalletScreen} />
+            <Stack.Screen name="Safety" component={SafetyScreen} />
             {DEBUG_TOOLS_ENABLED && (
               <Stack.Screen name="Debug" component={DebugScreen} />
             )}
