@@ -8,7 +8,7 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {CenteringMark} from '../components/CenteringMark';
 import {CreditService, CreditBalance} from '../services/credits';
 import {useLocalAuth} from '../hooks/useLocalAuth';
@@ -16,6 +16,7 @@ import {useMWAWallet} from '../hooks/useMWAWallet';
 import {useSession} from '../hooks/useSession';
 import {useDiscordAuth} from '../hooks/useDiscordAuth';
 import {T} from '../constants/tokens';
+import {hasAcceptedSafetyTerms} from '../services/safety';
 
 const truncate = (s: string, head = 4, tail = 4) => {
   if (!s) return '';
@@ -48,6 +49,19 @@ export const HomeScreen: React.FC = () => {
   const [balance, _setBalance] = useState<CreditBalance | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState<boolean | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      hasAcceptedSafetyTerms().then(accepted => {
+        if (active) setTermsAccepted(accepted);
+      });
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
 
   const isDemo = authMode === 'demo';
   const isMWA = authMode === 'mwa';
@@ -249,9 +263,13 @@ export const HomeScreen: React.FC = () => {
 
         <TouchableOpacity
           style={styles.submitBtn}
-          onPress={() =>
-            navigation.navigate('Camera', {captureMode: 'front'})
-          }>
+          onPress={() => {
+            if (!termsAccepted) {
+              navigation.navigate('Safety', {returnToSubmission: true});
+              return;
+            }
+            navigation.navigate('Camera', {captureMode: 'front'});
+          }}>
           <Text style={styles.submitBtnText}>
             {balance
               ? CreditService.getSubmitButtonLabel(balance)
@@ -263,6 +281,12 @@ export const HomeScreen: React.FC = () => {
           style={styles.vaultBtn}
           onPress={() => navigation.navigate('Vault')}>
           <Text style={styles.vaultBtnText}>VIEW MY SUBMISSIONS</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.safetyBtn}
+          onPress={() => navigation.navigate('Safety')}>
+          <Text style={styles.safetyBtnText}>PRIVACY &amp; SAFETY</Text>
         </TouchableOpacity>
 
         <View style={styles.footer}>
@@ -463,6 +487,13 @@ const styles = StyleSheet.create({
     color: T.gold,
     fontFamily: 'monospace',
     fontSize: 12,
+    letterSpacing: 2,
+  },
+  safetyBtn: {padding: 12, alignItems: 'center'},
+  safetyBtnText: {
+    color: T.textMuted,
+    fontFamily: 'monospace',
+    fontSize: 10,
     letterSpacing: 2,
   },
   footer: {

@@ -328,6 +328,38 @@ export const ApiService = {
     return api.get('/auth/profile');
   },
 
+  getSafetyTerms() {
+    return api.get('/safety/terms');
+  },
+
+  acceptSafetyTerms(termsVersion: string) {
+    return api.post('/safety/terms', {terms_version: termsVersion});
+  },
+
+  reportContent(data: {
+    submissionId: string;
+    category: string;
+    details?: string;
+  }) {
+    return api.post('/safety/reports', {
+      submission_id: data.submissionId,
+      category: data.category,
+      ...(data.details ? {details: data.details} : {}),
+    });
+  },
+
+  blockContentOwner(submissionId: string) {
+    return api.post('/safety/blocks', {submission_id: submissionId});
+  },
+
+  getAccountDeletionRequest() {
+    return api.get('/account/deletion-request');
+  },
+
+  requestAccountDeletion() {
+    return api.post('/account/deletion-request', {confirmation: 'DELETE'});
+  },
+
   /** Soft-delete a submission (only works for non-sealed/non-minted). */
   deleteSubmission(submissionId: string, walletPubkey: string) {
     return api.delete(`/submissions/${submissionId}?wallet_pubkey=${encodeURIComponent(walletPubkey)}`);
