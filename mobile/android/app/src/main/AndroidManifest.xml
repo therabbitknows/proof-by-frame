@@ -1,0 +1,94 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- expo-image-picker: library access (Android 13+ uses READ_MEDIA_IMAGES;
+         earlier Android versions use READ_EXTERNAL_STORAGE, declared for compat). -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+      android:maxSdkVersion="32" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
+    <!-- Android 11+ package-visibility filter. Without these <queries> entries,
+         Linking.canOpenURL() returns false even when a handler app is
+         installed — observed on Saga 2026-04-26: tap LIST → solana-action: URI
+         resolves false → fallback opens HTTPS in Chrome instead of a wallet.
+         The primary listing flow now uses MWA directly (sign in-app), but
+         these declarations make the deep-link fallback work for any future
+         flow that wants to open a Blink in an external wallet. -->
+    <queries>
+        <!-- Solana Pay scheme — used by useSolanaPayConnect to hand off
+             a Transfer Request URL to any installed Solana wallet. WITHOUT
+             this entry, Linking.canOpenURL('solana:...') returns false on
+             Android 11+ even when a wallet IS installed and CAN handle the
+             URL — Saga ships with Phantom + Solflare preinstalled, both of
+             which register the `solana:` scheme, but our package-visibility
+             query has to enumerate it explicitly. Observed 2026-05-01:
+             tap CONNECT WALLET → openSolanaPayUrl threw "No Solana-
+             compatible wallet installed" because the canOpenURL probe
+             came back false despite both wallets being on the device. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="solana" />
+        </intent>
+        <!-- Solana Actions / Blinks scheme -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="solana-action" />
+        </intent>
+        <!-- HTTPS opens (Blink URL fallback / external links) -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <!-- Solana Mobile Wallet Adapter intent (used by transact()) -->
+        <intent>
+            <action android:name="com.solana.mobilewalletadapter.WalletAdapterService" />
+        </intent>
+    </queries>
+
+    <application
+      android:name=".MainApplication"
+      android:label="@string/app_name"
+      android:icon="@mipmap/ic_launcher"
+      android:roundIcon="@mipmap/ic_launcher_round"
+      android:allowBackup="false"
+      android:theme="@style/AppTheme"
+      android:supportsRtl="true">
+      <activity
+        android:name=".MainActivity"
+        android:label="@string/app_name"
+        android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+        android:launchMode="singleTask"
+        android:windowSoftInputMode="adjustResize"
+        android:screenOrientation="portrait"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+        <!-- Discord OAuth callback (backend handoff). -->
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="proofapp" android:host="auth" android:pathPrefix="/callback" />
+        </intent-filter>
+        <!-- Sign in with World ID (OIDC) callback — Android App Link under
+             the same proofbyframe.com domain that Phantom uses. Worldcoin's
+             developer portal applies the same http/https-only redirect URL
+             validation; moving both auth flows to the same owned domain
+             means one assetlinks.json covers both paths. -->
+        <intent-filter android:autoVerify="true">
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https"
+                  android:host="proofbyframe.com"
+                  android:pathPrefix="/worldid/callback" />
+        </intent-filter>
+      </activity>
+    </application>
+</manifest>
