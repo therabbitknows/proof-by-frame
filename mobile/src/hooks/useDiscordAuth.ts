@@ -43,6 +43,10 @@ import React, {
 import {Linking} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {ApiService} from '../services/api';
+import {
+  APP_REDIRECT_URI,
+  parseDiscordOAuthCallback,
+} from '../auth/discordOAuthCallback';
 
 export type AccessStatus = 'pending' | 'approved' | 'rejected' | 'revoked' | null;
 
@@ -66,8 +70,6 @@ const EMPTY_SESSION: DiscordSession = {
 
 const SESSION_KEY = 'PROOF_AUTH_SESSION';
 const TOKEN_KEY = 'proof_user_token'; // mirror for axios interceptor
-const APP_REDIRECT_URI = 'proofapp://auth/callback';
-
 function normalizeStatus(raw: any): AccessStatus {
   if (raw === 'approved' || raw === 'pending' || raw === 'rejected' || raw === 'revoked') {
     return raw;
@@ -86,16 +88,6 @@ function sessionFromBackend(data: any): DiscordSession {
     accessStatus: normalizeStatus(rawStatus),
     expiresAt: data.expires_at ?? null,
   };
-}
-
-function extractCode(url: string): string | null {
-  if (!url.startsWith(APP_REDIRECT_URI)) return null;
-  const q = url.split('?')[1] ?? '';
-  const codeEntry = q.split('&').find(p => p.startsWith('code='));
-  if (codeEntry) return decodeURIComponent(codeEntry.split('=')[1] ?? '');
-  const errEntry = q.split('&').find(p => p.startsWith('error='));
-  if (errEntry) throw new Error(decodeURIComponent(errEntry.split('=')[1] ?? 'oauth_error'));
-  return null;
 }
 
 async function persistSession(session: DiscordSession): Promise<void> {
@@ -156,23 +148,20 @@ export const DiscordAuthProvider: React.FC<{children: React.ReactNode}> = ({
   const processedUrlsRef = useRef<Set<string>>(new Set());
   const loginInFlightRef = useRef(false);
 
-  const exchangeCode = useCallback(async (code: string) => {
+  const exchangeCode = useCallback(async (code: string, redirectUri: string | null) => {
     if (exchangingRef.current === code) {
       return;
     }
     exchangingRef.current = code;
-    console.log('[PROOF][discord] exchanging code for session', {
-      codeSample: code.slice(0, 8) + '…',
-    });
+    console.log('[PROOF][discord] exchanging authorization code');
     try {
       const res = await ApiService.exchangeDiscordCode(
         code,
-        ApiService.discordBackendRedirect(),
+        redirectUri || ApiService.discordBackendRedirect(),
       );
       const next = sessionFromBackend(res.data);
-      console.log('[PROOF][discord] exchange ok, session', {
+      console.log('[PROOF][discord] exchange completed', {
         accessStatus: next.accessStatus,
-        username: next.discordUsername,
         hasToken: Boolean(next.accessToken),
       });
       await persistSession(next);
@@ -194,11 +183,11 @@ export const DiscordAuthProvider: React.FC<{children: React.ReactNode}> = ({
       if (!url.startsWith(APP_REDIRECT_URI)) return;
       if (processedUrlsRef.current.has(url)) return;
       processedUrlsRef.current.add(url);
-      console.log('[PROOF][discord] deep link received', url);
+      console.log('[PROOF][discord] OAuth handoff received');
       try {
-        const code = extractCode(url);
-        if (!code) return;
-        await exchangeCode(code);
+        const callback = parseDiscordOAuthCallback(url);
+        if (!callback) return;
+        await exchangeCode(callback.code, callback.redirectUri);
       } catch (err: any) {
         console.log('[PROOF][discord] url handler error', err?.message);
         setError(err?.message || 'oauth_error');
