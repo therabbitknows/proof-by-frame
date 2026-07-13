@@ -11,6 +11,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,8 +23,15 @@ import {
   verifyWithWorldIDV4,
   type WorldIDRequestContext,
   type WorldIDVerification,
+  type WorldIDV4FlowResult,
 } from '../services/worldid';
 import {useSession} from './useSession';
+import {
+  retryWorldIDTransportOnce,
+  isWorldIDTransportError,
+  type WorldIDStage,
+  worldIDErrorForStage,
+} from '../services/worldidRecovery';
 
 const STORAGE_KEY = 'PROOF_WORLD_ID_VERIFICATION';
 
@@ -67,6 +75,11 @@ export const WorldIDAuthProvider: React.FC<{children: React.ReactNode}> = ({
   const [isVerifying, setIsVerifying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const pendingV4 = useRef<{
+    walletPubkey: string;
+    flow: WorldIDV4FlowResult;
+    backendConfirmed: boolean;
+  } | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -86,30 +99,55 @@ export const WorldIDAuthProvider: React.FC<{children: React.ReactNode}> = ({
 
   const verify = useCallback(async (): Promise<{success: boolean; error?: string}> => {
     if (isVerifying) return {success: false, error: 'verification already in progress'};
+    if (!walletPubkey) {
+      const message = 'Connect a wallet before verifying with World ID';
+      setError(message);
+      return {success: false, error: message};
+    }
     setIsVerifying(true);
     setError(null);
+    let stage: WorldIDStage = 'setup';
     try {
-      if (!walletPubkey) {
-        throw new Error('Connect a wallet before verifying with World ID');
+      if (pendingV4.current?.walletPubkey === walletPubkey) {
+        const pending = pendingV4.current;
+        if (!pending.backendConfirmed) {
+          stage = 'backend';
+          await retryWorldIDTransportOnce(() =>
+            ApiService.verifyWorldIDV4(walletPubkey, pending.flow.idkitResponse),
+          );
+          pending.backendConfirmed = true;
+        }
+        stage = 'local';
+        await persist(pending.flow.verification);
+        setVerification(pending.flow.verification);
+        pendingV4.current = null;
+        return {success: true};
       }
+
       const requestResponse = await ApiService.getWorldIDRequestContext();
       const requestContext = requestResponse.data as WorldIDRequestContext;
 
       if (hasWorldIDV4Context(requestContext)) {
+        stage = 'proof';
         const flow = await verifyWithWorldIDV4({
           requestContext,
           walletPubkey,
           returnTo: CONFIG.WORLD_ID_RETURN_URL,
         });
-        await ApiService.verifyWorldIDV4(
-          walletPubkey,
-          flow.idkitResponse,
+        pendingV4.current = {walletPubkey, flow, backendConfirmed: false};
+        stage = 'backend';
+        await retryWorldIDTransportOnce(() =>
+          ApiService.verifyWorldIDV4(walletPubkey, flow.idkitResponse),
         );
+        pendingV4.current.backendConfirmed = true;
+        stage = 'local';
         await persist(flow.verification);
         setVerification(flow.verification);
+        pendingV4.current = null;
         return {success: true};
       }
 
+      stage = 'proof';
       const result = await verifyWithWorldID({
         appId: requestContext.app_id || CONFIG.WORLD_ID_APP_ID,
         redirectUri: CONFIG.WORLD_ID_REDIRECT_URL,
@@ -122,12 +160,8 @@ export const WorldIDAuthProvider: React.FC<{children: React.ReactNode}> = ({
       // and the backend voting/listing gates can't see it.
       console.log('[PROOF][worldid] verify result shape', {
         hasIdToken: typeof result.idToken === 'string' && result.idToken.length > 10,
-        idTokenPrefix: typeof result.idToken === 'string'
-          ? result.idToken.slice(0, 12) + '…'
-          : 'NOT_STRING',
         hasAccessToken: typeof result.accessToken === 'string' && result.accessToken.length > 10,
         verificationLevel: result.verificationLevel,
-        nullifierTail: result.nullifierHash?.slice(-10),
       });
       if (!result.idToken || result.idToken.length < 10) {
         console.log('[PROOF][worldid] result.idToken missing/short — skipping backend verify, local-only');
@@ -141,25 +175,38 @@ export const WorldIDAuthProvider: React.FC<{children: React.ReactNode}> = ({
           );
           console.log('[PROOF][worldid] backend verify OK');
         } catch (err: any) {
-          const detail = err?.response?.data?.detail || err?.message || '';
-          console.log('[PROOF][worldid] backend verify failed', detail);
+          const status = Number(err?.response?.status);
+          console.log('[PROOF][worldid] backend verify failed', {
+            diagnostic: Number.isFinite(status) ? `http_${status}` : 'request_failed',
+          });
           // Surface the failure but don't block local persistence.
-          setError(`Backend verify failed: ${detail}`);
+          setError('Backend verification could not be completed. Please try again.');
         }
       }
 
       await persist(result);
       setVerification(result);
-      console.log('[PROOF][worldid] verified', {
-        level: result.verificationLevel,
-        sub: result.nullifierHash.slice(0, 10) + '…',
-      });
+      console.log('[PROOF][worldid] verified', {level: result.verificationLevel});
       return {success: true};
     } catch (err: any) {
-      const msg = err?.message || 'verification_failed';
-      if (msg !== 'Cancelled') setError(msg);
-      console.log('[PROOF][worldid] verify failed', msg);
-      return {success: false, error: msg};
+      if (stage === 'backend' && !isWorldIDTransportError(err)) {
+        pendingV4.current = null;
+      }
+      const failure = worldIDErrorForStage(stage, err);
+      const msg = failure.message;
+      const cancelled =
+        failure.diagnostic === 'proof_cancelled' ||
+        failure.diagnostic === 'proof_user_rejected';
+      if (cancelled) {
+        setError(null);
+      } else {
+        setError(msg);
+      }
+      console.log('[PROOF][worldid] verify failed', {
+        stage,
+        diagnostic: failure.diagnostic,
+      });
+      return cancelled ? {success: false} : {success: false, error: msg};
     } finally {
       setIsVerifying(false);
     }

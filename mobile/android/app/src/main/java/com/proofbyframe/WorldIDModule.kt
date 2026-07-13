@@ -2,6 +2,7 @@ package com.proofbyframe
 
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -9,9 +10,8 @@ import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableMap
 import com.worldcoin.idkit.Environment
 import com.worldcoin.idkit.IDKit
-import com.worldcoin.idkit.IDKitCompletionResult
-import com.worldcoin.idkit.IDKitPollOptions
 import com.worldcoin.idkit.IDKitRequestConfig
+import com.worldcoin.idkit.IDKitStatus
 import com.worldcoin.idkit.RpContext
 import com.worldcoin.idkit.idkitResultToJson
 import com.worldcoin.idkit.orbLegacy
@@ -19,6 +19,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class WorldIDModule(
@@ -68,20 +69,33 @@ class WorldIDModule(
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
           },
         )
-        when (
-          val completion = request.pollUntilCompletion(
-            IDKitPollOptions(pollIntervalMs = 2_000u, timeoutMs = 120_000u),
-          )
-        ) {
-          is IDKitCompletionResult.Success -> {
-            promise.resolve(idkitResultToJson(completion.result))
+        var lastNetworkError: String? = null
+        repeat(60) {
+          when (val status = request.pollStatusOnce()) {
+            is IDKitStatus.Confirmed -> {
+              promise.resolve(idkitResultToJson(status.result))
+              return@launch
+            }
+            is IDKitStatus.Failed -> {
+              Log.w(TAG, "poll failed code=${status.error.rawValue}")
+              promise.reject("WORLD_ID_${status.error.rawValue}", status.error.rawValue)
+              return@launch
+            }
+            is IDKitStatus.NetworkingError -> {
+              lastNetworkError = status.error.rawValue
+              Log.w(TAG, "poll networking error code=$lastNetworkError")
+            }
+            IDKitStatus.AwaitingConfirmation,
+            IDKitStatus.WaitingForConnection -> Unit
           }
-          is IDKitCompletionResult.Failure -> {
-            promise.reject("WORLD_ID_${completion.error.rawValue}", completion.error.rawValue)
-          }
+          delay(2_000)
         }
+        val timeoutCode = lastNetworkError ?: "timeout"
+        Log.w(TAG, "poll exhausted code=$timeoutCode")
+        promise.reject("WORLD_ID_$timeoutCode", timeoutCode)
       } catch (error: Throwable) {
-        promise.reject("WORLD_ID_NATIVE_ERROR", error.message ?: "World ID failed", error)
+        Log.e(TAG, "native request failed type=${error.javaClass.simpleName}")
+        promise.reject("WORLD_ID_NATIVE_ERROR", "native_error")
       }
     }
   }
@@ -89,6 +103,10 @@ class WorldIDModule(
   override fun invalidate() {
     scope.cancel()
     super.invalidate()
+  }
+
+  companion object {
+    private const val TAG = "ProofWorldID"
   }
 }
 
