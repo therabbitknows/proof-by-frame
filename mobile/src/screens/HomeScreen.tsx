@@ -15,6 +15,7 @@ import {useLocalAuth} from '../hooks/useLocalAuth';
 import {useMWAWallet} from '../hooks/useMWAWallet';
 import {useSession} from '../hooks/useSession';
 import {useDiscordAuth} from '../hooks/useDiscordAuth';
+import {useWorldID} from '../hooks/useWorldID';
 import {T} from '../constants/tokens';
 import {hasAcceptedSafetyTerms} from '../services/safety';
 
@@ -45,7 +46,10 @@ export const HomeScreen: React.FC = () => {
     signOutDiscord,
     refreshProfile,
   } = useDiscordAuth();
-  const [worldIdVerified] = useState(false);
+  const {
+    isVerified: worldIdVerified,
+    isLoading: isWorldIDLoading,
+  } = useWorldID();
   const [balance, _setBalance] = useState<CreditBalance | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
@@ -215,17 +219,34 @@ export const HomeScreen: React.FC = () => {
           )}
         </View>
 
-        {!worldIdVerified && (
-          <View style={styles.verifyCard}>
-            <Text style={styles.verifyTitle}>VERIFY YOUR IDENTITY</Text>
+        {!isWorldIDLoading && (
+          <View
+            style={[
+              styles.verifyCard,
+              worldIdVerified && {borderColor: T.gradeGreen},
+            ]}>
+            <Text
+              style={[
+                styles.verifyTitle,
+                worldIdVerified && {color: T.gradeGreen},
+              ]}>
+              {worldIdVerified
+                ? '\u2713 WORLD ID VERIFIED'
+                : 'VERIFY YOUR IDENTITY'}
+            </Text>
             <Text style={styles.verifyBody}>
-              Verify with World ID to vote on submissions and earn free
-              submission credits.
+              {worldIdVerified
+                ? 'Unique-human access is active for community voting and submission credits.'
+                : 'Verify with World ID to vote on submissions and earn free submission credits.'}
             </Text>
             <TouchableOpacity
               style={styles.verifyBtn}
               onPress={() => navigation.navigate('WorldID')}>
-              <Text style={styles.verifyBtnText}>VERIFY WITH WORLD ID →</Text>
+              <Text style={styles.verifyBtnText}>
+                {worldIdVerified
+                  ? 'MANAGE WORLD ID →'
+                  : 'VERIFY WITH WORLD ID →'}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
