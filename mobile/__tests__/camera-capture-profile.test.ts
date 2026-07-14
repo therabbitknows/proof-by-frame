@@ -22,6 +22,7 @@ describe('Seeker capture profile', () => {
     expect(crop.originX + crop.width).toBeLessThanOrEqual(3024);
     expect(crop.originY + crop.height).toBeLessThanOrEqual(4032);
     expect(crop.width / crop.height).toBeCloseTo(2.5 / 3.5, 2);
+    expect(crop.width * crop.height).toBeGreaterThan(6_000_000);
   });
 
   it('keeps a landscape bitmap crop inside its own bounds', () => {
