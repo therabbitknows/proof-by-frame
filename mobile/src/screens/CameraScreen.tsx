@@ -18,6 +18,11 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import {evaluateSingleImageGuard, type CaptureGuardResult} from '../services/captureGuard';
+import {
+  OUTPUT_JPEG_QUALITY,
+  TARGET_PHOTO_RESOLUTION,
+  cardCropForSize,
+} from '../services/captureProfile';
 import {T} from '../constants/tokens';
 
 // Card aspect 2.5 : 3.5 (standard TCG + sports card)
@@ -32,23 +37,6 @@ const FRAME_H = FRAME_W / CARD_RATIO;
 
 // Hold-steady countdown in seconds — enforces a stable capture window.
 const HOLD_SECONDS = 3;
-
-// Crop target after the smaller frame: still leave a small margin around the
-// card for OCR breathing room.
-const CROP_WIDTH_FRAC = 0.72;
-
-/**
- * Utility to probe file size via blob.
- */
-const getFileSize = async (uri: string): Promise<number> => {
-  try {
-    const resp = await fetch(uri);
-    const blob = await resp.blob();
-    return blob.size;
-  } catch {
-    return -1;
-  }
-};
 
 type CaptureMode = 'front' | 'back';
 type CaptureOrigin = 'live_capture' | 'library_upload';
@@ -75,12 +63,10 @@ export const CameraScreen: React.FC<Props> = ({
     physicalDevices: ['wide-angle-camera'],
   });
 
-  // Optimize for the 50MP sensors on Seeker/Saga/Pixel 9 Pro.
-  // We want the highest photo resolution available, even if it
-  // slows down the initial format binding.
+  // Bounded 12 MP is enough for OCR after the card crop and avoids the long
+  // capture/encode stalls caused by selecting the sensor's maximum format.
   const format = useCameraFormat(device, [
-    {photoResolution: 'max'},
-    {videoResolution: 'max'},
+    {photoResolution: TARGET_PHOTO_RESOLUTION},
   ]);
 
   const camera = useRef<Camera>(null);
@@ -122,6 +108,7 @@ export const CameraScreen: React.FC<Props> = ({
   }, [device, zoom]);
 
   const runGuard = useCallback(async (uri: string) => {
+    const startedAt = Date.now();
     setGuardResult(null);
     setIsGuarding(true);
     try {
@@ -132,12 +119,17 @@ export const CameraScreen: React.FC<Props> = ({
       console.log('[PROOF][camera] side guard error', err);
     } finally {
       setIsGuarding(false);
+      console.log('[PROOF][camera][timing]', {
+        stage: 'guard',
+        durationMs: Date.now() - startedAt,
+      });
     }
   }, []);
 
   const capture = useCallback(async () => {
     if (!camera.current || isCapturing) return;
     setIsCapturing(true);
+    const captureStartedAt = Date.now();
     try {
       // Shutter fires immediately at countdown 0. The lens was already
       // settled by the pre-fire focus lock at T-1s.
@@ -147,105 +139,64 @@ export const CameraScreen: React.FC<Props> = ({
         enableHdr: format?.supportsPhotoHdr ?? false,
       });
 
+      const shutterStartedAt = Date.now();
       const photo = await camera.current.takePhoto({
         enableShutterSound: false,
       });
-
-      // VisionCamera v4 orientation → CW rotation that yields an upright
-      // image when the phone is held portrait. Defensive default to 0 if
-      // the orientation string is unrecognized.
-      const rotateByOrientation: Record<string, number> = {
-        portrait: 0,
-        landscapeRight: 90,
-        portraitUpsideDown: 180,
-        landscapeLeft: 270,
-      };
-      const rotateDeg = rotateByOrientation[photo.orientation] ?? 0;
-
-      // Normalize pass — apply any needed rotation AND re-encode to JPEG.
-      // This serves two purposes:
-      //   1. Resolves the sensor-vs-EXIF ambiguity: VisionCamera reports
-      //      photo.width/height as raw sensor dimensions, but the file on
-      //      disk may carry an EXIF orientation tag that flips them when
-      //      any loader honors EXIF. After this pass the bitmap on disk
-      //      is materially what its width/height says, with no EXIF.
-      //   2. Applies the sensor→portrait rotation if one was needed.
-      // We treat `intermediate.width/height` as the ground truth for the
-      // crop pass below, ignoring photo.width/height entirely.
-      const normalizeActions: ImageManipulator.Action[] = [];
-      if (rotateDeg !== 0) normalizeActions.push({rotate: rotateDeg});
-      const normalized = await ImageManipulator.manipulateAsync(
-        `file://${photo.path}`,
-        normalizeActions,
-        {format: ImageManipulator.SaveFormat.JPEG},
-      );
-      const intermediate = {
-        uri: normalized.uri,
-        width: normalized.width,
-        height: normalized.height,
-      };
-
-      const W = intermediate.width;
-      const H = intermediate.height;
-
-      // Static centered crop from the gold-frame overlay. The frame dictates
-      // how the user positions the card, so the crop is a fixed fraction of
-      // the normalized bitmap rather than a detected card rect.
-      let cropW = Math.ceil(W * CROP_WIDTH_FRAC);
-      let cropH = Math.ceil(cropW / CARD_RATIO);
-      if (cropH > H * 0.98) {
-        cropH = Math.floor(H * 0.98);
-        cropW = Math.ceil(cropH * CARD_RATIO);
-      }
-      cropW = Math.min(cropW, W);
-      cropH = Math.min(cropH, H);
-      let cropX = Math.floor((W - cropW) / 2);
-      let cropY = Math.floor((H - cropH) / 2);
-      cropX = Math.max(0, Math.min(cropX, W - cropW));
-      cropY = Math.max(0, Math.min(cropY, H - cropH));
-
-      console.log('[PROOF][camera] capture info', {
-        sensorW: photo.width,
-        sensorH: photo.height,
-        orientation: photo.orientation,
-        rotateDeg,
-        finalW: W,
-        finalH: H,
-        cropX,
-        cropY,
-        cropW,
-        cropH,
+      const photoCapturedAt = Date.now();
+      console.log('[PROOF][camera][timing]', {
+        stage: 'takePhoto',
+        durationMs: photoCapturedAt - shutterStartedAt,
       });
 
-      // Quality-first ladder. Start at JPEG q=0.92 (between 0.9 and 0.95 —
-      // likely lands first try at ~10MB on Saga/Seeker). Skip PNG entirely.
-      const UPLOAD_BUDGET_BYTES = 10 * 1024 * 1024;
-      let manipulated = null as ImageManipulator.ImageResult | null;
-      let currentSize = -1;
-
-      const qualityLadder = [0.92, 0.95, 0.9, 0.85, 0.82];
-      for (const quality of qualityLadder) {
-        const jpegCandidate = await ImageManipulator.manipulateAsync(
-          intermediate.uri,
-          [{crop: {originX: cropX, originY: cropY, width: cropW, height: cropH}}],
-          {compress: quality, format: ImageManipulator.SaveFormat.JPEG},
+      // VisionCamera stores photo orientation in EXIF instead of rotating the
+      // sensor buffer. Load once so Expo materializes that orientation, then
+      // crop and save the same in-memory bitmap. This avoids both raw-sensor
+      // dimension guesses and the old intermediate JPEG + quality ladder.
+      const manipulated = await (async (): Promise<ImageManipulator.ImageResult> => {
+        const context = ImageManipulator.ImageManipulator.manipulate(
+          `file://${photo.path}`,
         );
-        currentSize = await getFileSize(jpegCandidate.uri);
-        console.log('[PROOF][camera] JPEG attempt', {quality, size: currentSize});
+        let oriented: ImageManipulator.ImageRef | null = null;
+        let cropped: ImageManipulator.ImageRef | null = null;
+        try {
+          oriented = await context.renderAsync();
+          const crop = cardCropForSize(oriented.width, oriented.height);
 
-        if (currentSize > 0 && currentSize <= UPLOAD_BUDGET_BYTES) {
-          manipulated = jpegCandidate;
-          break;
+          console.log('[PROOF][camera] capture info', {
+            sensorW: photo.width,
+            sensorH: photo.height,
+            orientation: photo.orientation,
+            orientedW: oriented.width,
+            orientedH: oriented.height,
+            cropX: crop.originX,
+            cropY: crop.originY,
+            cropW: crop.width,
+            cropH: crop.height,
+          });
+
+          context.crop(crop);
+          cropped = await context.renderAsync();
+          return await cropped.saveAsync({
+            compress: OUTPUT_JPEG_QUALITY,
+            format: ImageManipulator.SaveFormat.JPEG,
+          });
+        } finally {
+          oriented?.release();
+          cropped?.release();
+          context.release();
         }
-        manipulated = jpegCandidate;
-      }
-
-      if (!manipulated) {
-        throw new Error('Image encoder failed to produce a file.');
-      }
+      })();
 
       // Stop in the review gate — user must tap LOOKS GOOD to advance.
       setPendingReview({uri: manipulated.uri, origin: 'live_capture'});
+      console.log('[PROOF][camera][timing]', {
+        stage: 'review_ready',
+        durationMs: Date.now() - captureStartedAt,
+        outputWidth: manipulated.width,
+        outputHeight: manipulated.height,
+        jpegQuality: OUTPUT_JPEG_QUALITY,
+      });
       void runGuard(manipulated.uri);
     } catch (err: any) {
       console.log('[PROOF][camera] capture failed', err?.message);
@@ -259,19 +210,6 @@ export const CameraScreen: React.FC<Props> = ({
     // so the closure captures the latest binding at call time.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCapturing]);
-
-  // Auto-confirm review after 5 seconds for faster flow.
-  useEffect(() => {
-    if (!pendingReview || pendingReview.origin === 'library_upload' || isGuarding) return;
-    if (guardResult && !guardResult.approved) return; // Don't auto-advance if guard failed
-
-    const timer = setTimeout(() => {
-      const captured = pendingReview;
-      setPendingReview(null);
-      onCapture(captured.uri, captureMode, captured.origin);
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, [pendingReview, onCapture, captureMode, isGuarding, guardResult]);
 
   // Explicit focus + exposure metering at the frame center. Called once at
   // countdown start so the camera commits to a focus distance/exposure BEFORE
@@ -384,6 +322,7 @@ export const CameraScreen: React.FC<Props> = ({
         photo={true}
         zoom={absoluteZoom}
         photoQualityBalance="balanced"
+        outputOrientation="preview"
       />
 
       {/* Card alignment overlay */}
