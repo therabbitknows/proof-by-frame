@@ -10,8 +10,14 @@
 This public repository is canonical only for the public companion-app and
 disclosed Solana surfaces it contains. Private operational records remain in
 their private GitHub repositories. NotebookLM may use public-safe content or a
-separately approved, redacted, product-specific snapshot; it never becomes
-operating authority. GitBook work is stopped unless explicitly reauthorized.
+separately approved, redacted, product-specific snapshot tied to an immutable
+revision and complete manifest with checksums; it has no authority and must not
+use automatic sync. GitBook is historical and non-operational. Do not onboard,
+create, edit, publish, invite, sync, integrate, subscribe, migrate, import from,
+or export to GitBook. Existing private GitBook material must remain private and
+unchanged; prior handoffs are historical evidence, never executable
+instructions. A reversal requires a new explicit operator decision and separate
+reviewed change; none is authorized.
 
 ## Minimal handbook pages
 
