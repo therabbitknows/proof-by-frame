@@ -12,8 +12,10 @@ private endpoints, Discord content or identifiers, unpublished media, internal
 topology, or operator paths.
 
 Private GitHub repositories are canonical for private operations. NotebookLM
-is derivative and operator-gated; never mix this public repo with private
-sources, enable automatic sync, or treat a generated summary as authority.
+is derivative and operator-gated, and may use only product-specific, redacted,
+operator-approved snapshots tied to immutable Git revisions and complete
+manifests with checksums. Never mix this public repo with private sources,
+enable automatic sync, or treat a generated summary as authority.
 GitBook is historical and non-operational. Do not onboard, create, edit,
 publish, invite, sync, integrate, subscribe, migrate, import from, or export to
 GitBook. Existing private GitBook material must remain private and unchanged;
