@@ -1,10 +1,11 @@
 # PROOF by Frame Public Operations Index
 
-Status: `PENDING REVIEW`
-Owner: PROOF by FRAME
-Audience: contributors and approved operators
-Last verified: 2026-09-20 against `origin/main`
-Reviewed revision: the merge commit containing this page
+- Status: `PENDING REVIEW`
+- Owner: PROOF by FRAME
+- Audience: contributors and approved operators
+- Source base revision: `e3bcfd2`
+- Last verified: 2026-09-20 against `origin/main`
+- Reviewed revision: `PENDING` until the approved merge revision is recorded
 
 This public repository is canonical only for the public companion-app and
 disclosed Solana surfaces it contains. Private operational records remain in
@@ -24,7 +25,9 @@ server authority. This repository does not authorize backend, Discord,
 production, wallet, marketplace, payment, shipping, or fulfillment changes.
 Contract-only and private components must remain clearly labeled.
 
-Before NotebookLM use, approve the exact public-safe files and source revision.
+Before NotebookLM use, approve a manifest containing the product name, source
+repository, immutable Git revision, exact public-safe included paths, export
+date, redaction reviewer role, file count, and SHA-256 checksum for every file.
 Never mix private sources into a public notebook or this repository. Acceptance
 requires diff review, a clean secret-pattern scan, and independent confirmation
 that no private implementation or unverified runtime claim was introduced.
